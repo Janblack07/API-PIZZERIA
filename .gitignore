@@ -21,5 +21,6 @@ src/main/resources/application-local.properties
 src/main/resources/firebase/*.json
 *service-account*.json
 *-firebase-adminsdk-*.json
+*FIREBASE-API-PIZZERIA*.json
 secrets/
 **/secrets/**
