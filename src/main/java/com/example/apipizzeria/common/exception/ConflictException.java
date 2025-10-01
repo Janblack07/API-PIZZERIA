@@ -1,9 +1,8 @@
 package com.example.apipizzeria.common.exception;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
 
-@ResponseStatus(HttpStatus.CONFLICT)
-public class ConflictException extends RuntimeException {
-    public ConflictException(String message) { super(message); }
+public class ConflictException extends ApiException {
+    public ConflictException(String message) { super(HttpStatus.CONFLICT, message); }
+    public ConflictException(String code, String message) { super(HttpStatus.CONFLICT, code, message); }
 }
