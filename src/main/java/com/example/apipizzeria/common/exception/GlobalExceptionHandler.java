@@ -1,5 +1,7 @@
 package com.example.apipizzeria.common.exception;
 
+
+import com.example.apipizzeria.common.api.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -18,108 +20,154 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // ====== EXCEPCIONES PROPIAS ======
+    // ========= EXCEPCIONES PROPIAS =========
     @ExceptionHandler(ApiException.class)
-    public ResponseEntity<ApiError> handleApi(ApiException ex, HttpServletRequest req) {
+    public ResponseEntity<ApiResponse<Void>> handleApi(ApiException ex, HttpServletRequest req) {
         HttpStatus st = ex.getStatus();
-        return ResponseEntity.status(st).body(
-                ApiError.of(st.value(), st.getReasonPhrase(), ex.getCode(), ex.getMessage(), req.getRequestURI(), null)
+        var body = ApiResponse.<Void>error(
+                st.value(),
+                ex.getMessage(),
+                Map.of("code", ex.getCode()),
+                req.getRequestURI()
         );
+        return ResponseEntity.status(st).body(body);
     }
 
-    // ====== VALIDACIONES ======
+    // ========= VALIDACIONES (DTO @Valid) =========
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiError> handleBeanValidation(MethodArgumentNotValidException ex, HttpServletRequest req) {
+    public ResponseEntity<ApiResponse<Void>> handleBeanValidation(MethodArgumentNotValidException ex,
+                                                                  HttpServletRequest req) {
         Map<String, String> fields = new HashMap<>();
-        ex.getBindingResult().getFieldErrors().forEach(fe -> fields.put(fe.getField(), fe.getDefaultMessage()));
-        var st = HttpStatus.BAD_REQUEST;
-        return ResponseEntity.status(st).body(
-                ApiError.of(st.value(), st.getReasonPhrase(), "VALIDATION_ERROR",
-                        "Datos inválidos", req.getRequestURI(), fields)
+        ex.getBindingResult().getFieldErrors()
+                .forEach(fe -> fields.put(fe.getField(), fe.getDefaultMessage()));
+
+        HttpStatus st = HttpStatus.BAD_REQUEST; // o 422 si prefieres
+        var body = ApiResponse.<Void>error(
+                st.value(),
+                "Datos inválidos",
+                Map.of("fields", fields),
+                req.getRequestURI()
         );
+        return ResponseEntity.status(st).body(body);
     }
 
+    // ========= VALIDACIONES (@Validated en path/query) =========
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<ApiError> handleConstraint(ConstraintViolationException ex, HttpServletRequest req) {
+    public ResponseEntity<ApiResponse<Void>> handleConstraint(ConstraintViolationException ex,
+                                                              HttpServletRequest req) {
         Map<String, String> fields = new HashMap<>();
-        ex.getConstraintViolations().forEach(v -> fields.put(v.getPropertyPath().toString(), v.getMessage()));
-        var st = HttpStatus.BAD_REQUEST;
-        return ResponseEntity.status(st).body(
-                ApiError.of(st.value(), st.getReasonPhrase(), "CONSTRAINT_VIOLATION",
-                        "Datos inválidos", req.getRequestURI(), fields)
+        ex.getConstraintViolations()
+                .forEach(v -> fields.put(v.getPropertyPath().toString(), v.getMessage()));
+
+        HttpStatus st = HttpStatus.BAD_REQUEST; // o 422
+        var body = ApiResponse.<Void>error(
+                st.value(),
+                "Datos inválidos",
+                Map.of("fields", fields),
+                req.getRequestURI()
         );
+        return ResponseEntity.status(st).body(body);
     }
 
-    // ====== REQUEST MAL FORMADO ======
+    // ========= REQUEST MAL FORMADO =========
     @ExceptionHandler({
             HttpMessageNotReadableException.class,
             MissingServletRequestParameterException.class
     })
-    public ResponseEntity<ApiError> handleBadRequest(Exception ex, HttpServletRequest req) {
-        var st = HttpStatus.BAD_REQUEST;
-        return ResponseEntity.status(st).body(
-                ApiError.of(st.value(), st.getReasonPhrase(), "BAD_REQUEST",
-                        ex.getMessage(), req.getRequestURI(), null)
+    public ResponseEntity<ApiResponse<Void>> handleBadRequest(Exception ex, HttpServletRequest req) {
+        HttpStatus st = HttpStatus.BAD_REQUEST;
+        var body = ApiResponse.<Void>error(
+                st.value(),
+                "Solicitud mal formada",
+                ex.getMessage(),                  // meta: string con detalle
+                req.getRequestURI()
         );
+        return ResponseEntity.status(st).body(body);
     }
 
-    // ====== MÉTODO / RUTA ======
+    // ========= MÉTODO / RUTA =========
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-    public ResponseEntity<ApiError> handleMethodNotAllowed(HttpRequestMethodNotSupportedException ex, HttpServletRequest req) {
-        var st = HttpStatus.METHOD_NOT_ALLOWED;
-        return ResponseEntity.status(st).body(
-                ApiError.of(st.value(), st.getReasonPhrase(), "METHOD_NOT_ALLOWED",
-                        ex.getMessage(), req.getRequestURI(), null)
+    public ResponseEntity<ApiResponse<Void>> handleMethodNotAllowed(HttpRequestMethodNotSupportedException ex,
+                                                                    HttpServletRequest req) {
+        HttpStatus st = HttpStatus.METHOD_NOT_ALLOWED;
+        var body = ApiResponse.<Void>error(
+                st.value(),
+                "Método no permitido",
+                Map.of(
+                        "method", ex.getMethod(),
+                        "supported", ex.getSupportedHttpMethods()
+                ),
+                req.getRequestURI()
         );
+        return ResponseEntity.status(st).body(body);
     }
 
-    // (Opcional) si habilitas NoHandlerFoundException en properties
+    // (Opcional) requiere en application.properties:
+    // spring.mvc.throw-exception-if-no-handler-found=true
+    // spring.web.resources.add-mappings=false
     @ExceptionHandler(org.springframework.web.servlet.NoHandlerFoundException.class)
-    public ResponseEntity<ApiError> handleNoHandler(org.springframework.web.servlet.NoHandlerFoundException ex, HttpServletRequest req) {
-        var st = HttpStatus.NOT_FOUND;
-        return ResponseEntity.status(st).body(
-                ApiError.of(st.value(), st.getReasonPhrase(), "NO_HANDLER",
-                        "Recurso no encontrado", req.getRequestURI(), null)
+    public ResponseEntity<ApiResponse<Void>> handleNoHandler(org.springframework.web.servlet.NoHandlerFoundException ex,
+                                                             HttpServletRequest req) {
+        HttpStatus st = HttpStatus.NOT_FOUND;
+        var body = ApiResponse.<Void>error(
+                st.value(),
+                "Recurso no encontrado",
+                Map.of("pathTried", ex.getRequestURL()),
+                req.getRequestURI()
         );
+        return ResponseEntity.status(st).body(body);
     }
 
-    // ====== JPA/DB ======
+    // ========= JPA/DB =========
     @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<ApiError> handleDataIntegrity(DataIntegrityViolationException ex, HttpServletRequest req) {
-        var st = HttpStatus.CONFLICT;
-        return ResponseEntity.status(st).body(
-                ApiError.of(st.value(), st.getReasonPhrase(), "DATA_INTEGRITY",
-                        "Conflicto con datos persistidos", req.getRequestURI(), null)
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrity(DataIntegrityViolationException ex,
+                                                                 HttpServletRequest req) {
+        HttpStatus st = HttpStatus.CONFLICT;
+        var body = ApiResponse.<Void>error(
+                st.value(),
+                "Conflicto con datos persistidos",
+                // si quieres, puedes meter el rootCause:
+                ex.getRootCause() != null ? ex.getRootCause().getMessage() : ex.getMessage(),
+                req.getRequestURI()
         );
+        return ResponseEntity.status(st).body(body);
     }
 
-    // ====== SECURITY ======
+    // ========= SECURITY =========
     @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<ApiError> handleAuth(AuthenticationException ex, HttpServletRequest req) {
-        var st = HttpStatus.UNAUTHORIZED;
-        return ResponseEntity.status(st).body(
-                ApiError.of(st.value(), st.getReasonPhrase(), "UNAUTHORIZED",
-                        ex.getMessage(), req.getRequestURI(), null)
+    public ResponseEntity<ApiResponse<Void>> handleAuth(AuthenticationException ex, HttpServletRequest req) {
+        HttpStatus st = HttpStatus.UNAUTHORIZED;
+        var body = ApiResponse.<Void>error(
+                st.value(),
+                "No autenticado",
+                ex.getMessage(),
+                req.getRequestURI()
         );
+        return ResponseEntity.status(st).body(body);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ApiError> handleForbidden(AccessDeniedException ex, HttpServletRequest req) {
-        var st = HttpStatus.FORBIDDEN;
-        return ResponseEntity.status(st).body(
-                ApiError.of(st.value(), st.getReasonPhrase(), "FORBIDDEN",
-                        "No tienes permisos para acceder a este recurso", req.getRequestURI(), null)
+    public ResponseEntity<ApiResponse<Void>> handleForbidden(AccessDeniedException ex, HttpServletRequest req) {
+        HttpStatus st = HttpStatus.FORBIDDEN;
+        var body = ApiResponse.<Void>error(
+                st.value(),
+                "No tienes permisos para acceder a este recurso",
+                null,
+                req.getRequestURI()
         );
+        return ResponseEntity.status(st).body(body);
     }
 
-    // ====== CATCH-ALL ======
+    // ========= CATCH-ALL =========
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiError> handleOther(Exception ex, HttpServletRequest req) {
-        var st = HttpStatus.INTERNAL_SERVER_ERROR;
-        return ResponseEntity.status(st).body(
-                ApiError.of(st.value(), st.getReasonPhrase(), "UNEXPECTED_ERROR",
-                        (ex.getMessage() != null ? ex.getMessage() : "Error inesperado"),
-                        req.getRequestURI(), null)
+    public ResponseEntity<ApiResponse<Void>> handleOther(Exception ex, HttpServletRequest req) {
+        HttpStatus st = HttpStatus.INTERNAL_SERVER_ERROR;
+        var body = ApiResponse.<Void>error(
+                st.value(),
+                "Error interno",
+                ex.getMessage(),
+                req.getRequestURI()
         );
+        return ResponseEntity.status(st).body(body);
     }
 }
