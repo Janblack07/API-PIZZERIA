@@ -1,6 +1,7 @@
-package com.example.apipizzeria.Domain.catalog.entity;
+package com.example.apipizzeria.Domain.promo.entity;
 
 
+import com.example.apipizzeria.Domain.order.entity.Order;
 import com.example.apipizzeria.Domain.user.entity.User;
 import com.example.apipizzeria.common.BaseEntity;
 import jakarta.persistence.*;

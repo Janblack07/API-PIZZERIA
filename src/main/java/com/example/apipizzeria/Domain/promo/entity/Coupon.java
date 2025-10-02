@@ -1,4 +1,4 @@
-package com.example.apipizzeria.Domain.catalog.entity;
+package com.example.apipizzeria.Domain.promo.entity;
 
 import com.example.apipizzeria.common.BaseEntity;
 import jakarta.persistence.*;

@@ -1,7 +1,4 @@
-package com.example.apipizzeria.Domain.address.entity;
-
-
-import com.example.apipizzeria.Domain.user.entity.User;
+package com.example.apipizzeria.Domain.user.entity;
 import com.example.apipizzeria.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
