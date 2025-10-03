@@ -19,4 +19,12 @@ public class ApiException extends RuntimeException {
 
     public HttpStatus getStatus() { return status; }
     public String getCode() { return code; }
+
+    /* ===== Overloads (2 args) para tu servicio ===== */
+    public static ApiException unauthorized(String message, ErrorCode errorCode) {
+        return new ApiException(HttpStatus.UNAUTHORIZED, errorCode.name(), message);
+    }
+    public static ApiException forbidden(String message, ErrorCode errorCode) {
+        return new ApiException(HttpStatus.FORBIDDEN, errorCode.name(), message);
+    }
 }
