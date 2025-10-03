@@ -1,70 +1,71 @@
 package com.example.apipizzeria.Configuration.security;
 
-import io.jsonwebtoken.*;
-import io.jsonwebtoken.io.Decoders;
+import com.example.apipizzeria.Domain.user.entity.User;
+import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.security.Key;
-import java.time.Duration;
+import javax.crypto.SecretKey;
 import java.time.Instant;
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class JwtServiceImpl implements JwtService {
 
-    private final Key key;
+    private final SecretKey key;
+    private final String issuer;
+    private final long accessTtlSeconds;
+    private final long refreshTtlSeconds;
 
-    @Value("${security.jwt.issuer:PizzeriaAPI}")
-    private String issuer;
-
-    public JwtServiceImpl(@Value("${security.jwt.secret}") String secret) {
-        byte[] bytes = Decoders.BASE64.decode(secret);
-        this.key = Keys.hmacShaKeyFor(bytes);
+    public JwtServiceImpl(
+            @Value("${security.jwt.secret}") String secret,
+            @Value("${security.jwt.issuer:API-PIZZERIA}") String issuer,
+            @Value("${security.jwt.access-ttl-seconds:3600}") long accessTtlSeconds,
+            @Value("${security.jwt.refresh-ttl-seconds:2592000}") long refreshTtlSeconds
+    ) {
+        this.key = Keys.hmacShaKeyFor(secret.getBytes());
+        this.issuer = issuer;
+        this.accessTtlSeconds = accessTtlSeconds;
+        this.refreshTtlSeconds = refreshTtlSeconds;
     }
 
     @Override
-    public String generateAccessToken(Long userId, String email, String userType, List<String> roles, int tokenVersion, Duration ttl) {
-        Instant now = Instant.now(), exp = now.plus(ttl == null ? Duration.ofMinutes(15) : ttl);
+    public String issueAccessToken(User user) {
+        Instant now = Instant.now();
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("uid", user.getId());
+        claims.put("email", user.getEmail());
+        claims.put("kind", user.getKind().name());
+        claims.put("roles", user.getStaffRoles()); // [] si cliente
 
         return Jwts.builder()
                 .issuer(issuer)
-                .subject(String.valueOf(userId))
+                .subject(String.valueOf(user.getId()))
+                .claims(claims)
                 .issuedAt(Date.from(now))
-                .expiration(Date.from(exp))
-                .claim("uid", userId)
-                .claim("email", email)
-                .claim("user_type", userType)
-                .claim("roles", roles == null ? List.of() : roles)
-                .claim("ver", tokenVersion)
-                .signWith(key)                 // en 0.12: con key HMAC usa HS256 por defecto
+                .expiration(Date.from(now.plusSeconds(accessTtlSeconds)))
+                .signWith(key)
                 .compact();
     }
 
     @Override
-    public String generateRefreshToken(Long userId, Duration ttl) {
-        Instant now = Instant.now(), exp = now.plus(ttl == null ? Duration.ofDays(14) : ttl);
+    public String issueRefreshToken(User user) {
+        Instant now = Instant.now();
         return Jwts.builder()
                 .issuer(issuer)
-                .subject("refresh:" + userId)
+                .subject("refresh:" + user.getId())
                 .issuedAt(Date.from(now))
-                .expiration(Date.from(exp))
-                .claim("uid", userId)
+                .expiration(Date.from(now.plusSeconds(refreshTtlSeconds)))
                 .signWith(key)
                 .compact();
     }
 
     @Override
     public Map<String, Object> parseAndValidate(String token) {
-        // Funciona tanto en 0.11.x como 0.12.x
-        Jws<Claims> jws = Jwts.parser()
-                .setSigningKey(key)             // valida firma HS256 con tu key
-                .build()
-                .parseClaimsJws(token);         // lanza excepción si es inválido/expirado
-
-        Claims c = jws.getBody();
-        return new java.util.LinkedHashMap<>(c);
+        var jwt = Jwts.parser().verifyWith(key).build().parseSignedClaims(token);
+        return new HashMap<>(jwt.getPayload());
     }
-
 }
