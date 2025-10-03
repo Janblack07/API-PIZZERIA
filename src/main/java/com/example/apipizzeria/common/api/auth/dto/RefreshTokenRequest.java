@@ -1,4 +1,4 @@
 package com.example.apipizzeria.common.api.auth.dto;
 
-public record RefreshTokenRequest() {
-}
+import jakarta.validation.constraints.NotBlank;
+public record RefreshTokenRequest(@NotBlank String refreshToken) {}
