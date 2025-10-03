@@ -1,4 +1,9 @@
 package com.example.apipizzeria.common.exception;
 
-public class ErrorCode {
+public enum ErrorCode {
+    UNAUTHORIZED,
+    FORBIDDEN,
+    BAD_CREDENTIALS,
+    INVALID_TOKEN,
+    VALIDATION_ERROR
 }
