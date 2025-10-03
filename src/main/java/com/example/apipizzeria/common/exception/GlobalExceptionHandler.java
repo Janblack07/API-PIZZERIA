@@ -1,6 +1,7 @@
 package com.example.apipizzeria.common.exception;
 
 
+import com.example.apipizzeria.Configuration.firebase.InvalidFirebaseTokenException;
 import com.example.apipizzeria.common.api.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
@@ -169,5 +170,13 @@ public class GlobalExceptionHandler {
                 req.getRequestURI()
         );
         return ResponseEntity.status(st).body(body);
+    }
+    @ExceptionHandler(InvalidFirebaseTokenException.class)
+    public ResponseEntity<ApiError> handleInvalidFirebase(InvalidFirebaseTokenException ex, HttpServletRequest req) {
+        var st = HttpStatus.UNAUTHORIZED;
+        return ResponseEntity.status(st).body(
+                ApiError.of(st.value(), st.getReasonPhrase(), "INVALID_FIREBASE_TOKEN",
+                        ex.getMessage(), req.getRequestURI(), null)
+        );
     }
 }
