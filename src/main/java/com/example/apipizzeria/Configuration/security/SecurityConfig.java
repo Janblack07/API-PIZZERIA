@@ -40,6 +40,7 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/menu/**").permitAll()
                         .requestMatchers("/admin/**").hasAuthority("TYPE_ADMIN")
+                        .requestMatchers("/api/staff/**").hasAuthority("TYPE_ADMIN")
                         .requestMatchers("/kds/**").hasAuthority("COOK")
                         .requestMatchers("/pos/**").hasAuthority("CASHIER")
                         .requestMatchers("/delivery/**").hasAuthority("DRIVER")
