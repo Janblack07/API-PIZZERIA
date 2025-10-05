@@ -1,0 +1,4 @@
+package com.example.apipizzeria.common.api.address.dto;
+
+public record AddressCreateRequest() {
+}
