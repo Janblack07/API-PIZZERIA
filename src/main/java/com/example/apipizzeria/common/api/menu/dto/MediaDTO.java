@@ -1,4 +1,5 @@
 package com.example.apipizzeria.common.api.menu.dto;
 
-public class MediaDTO {
-}
+public record MediaDTO(
+        String secureUrl,
+        String alt) {}
