@@ -1,6 +1,7 @@
 package com.example.apipizzeria.Domain.catalog.entity;
 
 
+import com.example.apipizzeria.Configuration.media.entity.MediaAsset;
 import com.example.apipizzeria.common.BaseEntity;
 import com.example.apipizzeria.common.enums.Dough;
 import com.example.apipizzeria.common.enums.Size;
@@ -26,4 +27,8 @@ public class ProductVariant extends BaseEntity {
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "image_id")
+    private MediaAsset image;
 }

@@ -1,6 +1,7 @@
 package com.example.apipizzeria.Domain.catalog.entity;
 
 
+import com.example.apipizzeria.Configuration.media.entity.MediaAsset;
 import com.example.apipizzeria.common.BaseEntity;
 import com.example.apipizzeria.common.enums.ProductType;
 import jakarta.persistence.*;
@@ -30,8 +31,22 @@ public class Product extends BaseEntity {
     private boolean active = true;
 
     private boolean customizable;       // builder (pizzas armables)
+    /** Imagen principal del producto (opcional) */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "featured_image_id")
+    private MediaAsset featuredImage;
+
+    /** Galería opcional (n imágenes) */
+    @ManyToMany
+    @JoinTable(
+            name = "product_gallery",
+            joinColumns = @JoinColumn(name = "product_id"),
+            inverseJoinColumns = @JoinColumn(name = "media_id")
+    )
+    private Set<MediaAsset> gallery = new HashSet<>();
 
     // Variantes (tamaño/masa/precio)
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<ProductVariant> variants = new HashSet<>();
+
 }
